@@ -20,7 +20,7 @@ bring_service_json(Url)->
 
     case StatusCode of 
 	200 ->
-	    Json = jiffy:decode(Body) ,
+	    Json = jsx:decode(Body) ,
 	    { ok, Json};
 	_ -> 
 	    {error ,StatusCode, Body}
@@ -29,9 +29,10 @@ bring_service_json(Url)->
 
 -spec validate_service_json(Json::{[tuple()]}, Service::googleapi:name(), Version::googleapi:name())-> ok | {error, _}.
 validate_service_json(Json, Service, Version)->
-    {JsonList} = Json,
-    case {proplists:get_value(<<"name">>, JsonList),
-	  proplists:get_value(<<"version">>, JsonList)} of 
+    %{JsonList} = Json,
+    %JsonList = Json,
+    case {proplists:get_value(<<"name">>, Json),
+	  proplists:get_value(<<"version">>, Json)} of 
 	{Service, Version} ->
 	    ok;
 	Other ->
@@ -41,8 +42,8 @@ validate_service_json(Json, Service, Version)->
 -spec get_object_json(Json::{[tuple()]}, Object::googleapi:name()) -> {[tuple()]}.
 get_object_json(Json, Object) when is_list(Object)->
     get_object_json(Json, binary:list_to_bin(Object));
-get_object_json({JsonList}, Object) when is_binary(Object)->
-    {Resources} = proplists:get_value(<<"resources">>, JsonList),
+get_object_json(JsonList, Object) when is_binary(Object)->
+    Resources = proplists:get_value(<<"resources">>, JsonList),
     case proplists:get_value(Object, Resources) of
 	undefined ->
 	    exit({error, "Unsupported object "++binary:bin_to_list(Object)});
@@ -54,8 +55,8 @@ get_object_json({JsonList}, Object) when is_binary(Object)->
 -spec get_method_json(Json :: {[any()]}, googleapi:name()) -> any().
 get_method_json(Json, Method) when is_list(Method) ->
     get_method_json(Json, binary:list_to_bin(Method) );
-get_method_json({JsonList}, Method) when is_binary(Method) ->
-    {Methods} = proplists:get_value(<<"methods">>, JsonList),
+get_method_json(JsonList, Method) when is_binary(Method) ->
+	Methods = proplists:get_value(<<"methods">>, JsonList),
     case proplists:get_value(Method, Methods) of
 	undefined ->
 	    exit({error, "Unsupported method "++binary:bin_to_list(Method)});

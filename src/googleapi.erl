@@ -105,6 +105,7 @@ build(Service, Version) when is_binary(Service) andalso is_binary(Version) ->
     ServiceUrl = << <<"https://www.googleapis.com/discovery/v1/apis/">>/binary,
 		    Service/binary, <<"/">>/binary, Version/binary, <<"/rest">>/binary >>,
     {ok, Json} = service_builder:bring_service_json(ServiceUrl),
+    io:format("# [~p] Service ~p, Version ~p~n", [?MODULE,Service, Version]),
     ok = service_builder:validate_service_json(Json, Service, Version),
 
     googleapi_sup:add_child(Service, googleapi_client, worker, [Service, 
@@ -139,7 +140,7 @@ check_response( {Code, RespHead, RespBody} ) ->
 				   <<>> ->
 				       [];
 				   _ ->
-				       {ARespJson} = jiffy:decode(RespBody),
+				       ARespJson = jsx:decode(RespBody),
 				       ARespJson
 			       end,
 
@@ -169,7 +170,7 @@ check_response( {Code, RespHead, RespBody} ) ->
 %% test_download_file({Code, RespHead, RespBody}, AuthHttp)->
 %%     case Code of 
 %% 	200 ->
-%% 	    {RespJson} = jiffy:decode(RespBody),
+%% 	    {RespJson} = jsx:decode(RespBody),
 %% 	    Link = proplists:get_value(<<"mediaLink">>, RespJson),
 %% 	    lager:info("Link: ~p", [Link]),
 %% 	    Response = auth_http:get(AuthHttp, Link, []),
@@ -199,7 +200,7 @@ test_storage_init()->
 
 build_test_()->
     Bucket_name = <<"testbucket24566">>,
-    Bucket_object = jiffy:encode({[{<<"name">>, Bucket_name}]}),
+    Bucket_object = jsx:encode({[{<<"name">>, Bucket_name}]}),
     ?debugFmt("Bucket_object=~p~n", [Bucket_object]),
 
     [

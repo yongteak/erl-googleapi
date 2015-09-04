@@ -97,8 +97,8 @@ handle_call_prepare(Object, Command, Params, Service) when is_list(Command) ->
     handle_call_prepare(Object, binary:list_to_bin(Command), Params, Service);
 
 handle_call_prepare(Object, Command, Params, Service) when is_binary(Object) andalso is_binary(Command) ->
-
-    Media = <<"_media">>,
+	
+	Media = <<"_media">>,
     Media_suffix_length = byte_size(<<"_media">>),
     
     Match = binary:longest_common_suffix([Command,Media]),
@@ -117,11 +117,9 @@ handle_call_prepare(Object, Command, Params, Service) when is_binary(Object) and
 
 -spec do_handle_call(googleapi:name(), googleapi:name(), list(), googleapi:name()) -> auth_http:http_response().
 do_handle_call(Object, Command, Params, Service)->
-
-    ObjectJson = get_object_json(Service, Object),
-
-    {MethodJson} = service_builder:get_method_json(ObjectJson, Command),
-
+	ObjectJson = get_object_json(Service, Object),
+	MethodJson = service_builder:get_method_json(ObjectJson, Command),
+    
     case build_request(Service, MethodJson, Params) of
 	{Method, Uri, Headers, Payload} ->
 	    case Method of 
@@ -162,14 +160,14 @@ build_request(Service, MethodJson, Params ) ->
 
 -spec check_required_params(Params::list(), MethodJson::[tuple()]) -> ok.
 check_required_params(Params, MethodJson) ->
-    {Parameters} = proplists:get_value(<<"parameters">>, MethodJson),
+    Parameters = proplists:get_value(<<"parameters">>, MethodJson),
     check_required_params_in(Params, Parameters).
 
 
 -spec check_required_params_in(list(), list() ) -> ok.
 check_required_params_in(_Params, _Parameters = [])->
     ok;
-check_required_params_in(Params, [{Pname, {PData} }|RestParameters]) ->
+check_required_params_in(Params, [{Pname, PData }|RestParameters]) ->
     Required = proplists:get_value(<<"required">>, PData),
     case Required of
 	undefined ->
@@ -193,9 +191,9 @@ get_command_uri(Service, MethodJson)->
 	       (get_service(Service))/binary, ?SLASH/binary,
 	       (get_version(Service))/binary, ?SLASH/binary,
 	       Path/binary >>, []};
-	{UploadConfig} ->
-	    {Protocols} = proplists:get_value(<<"protocols">>, UploadConfig),
-	    {Simple} = proplists:get_value(<<"simple">>, Protocols),
+	UploadConfig ->
+	    Protocols = proplists:get_value(<<"protocols">>, UploadConfig),
+	    Simple = proplists:get_value(<<"simple">>, Protocols),
 	    { proplists:get_value(<<"path">>, Simple), [ { <<"uploadType">>, <<"media">>}] }
     end.
     
@@ -213,9 +211,7 @@ build_params_pre(Service, BaseUrl, Params , MethodJson) ->
 build_params(BaseUrl, _Params = [] , _AllParams, _MethodJson,  {QS, Headers, Postbody}) ->
     {BaseUrl, QS, Headers, Postbody};
 build_params(BaseUrl, [{ParamName, ParamValue} = Param |RestParams], AllParams, MethodJson, {QS, Headers, Postbody}) ->
-    {Parameters} = proplists:get_value(<<"parameters">>, MethodJson),
-
-
+    Parameters = proplists:get_value(<<"parameters">>, MethodJson),
     case proplists:get_value(ParamName, Parameters) of 
 	undefined ->
 	    case ParamName of
@@ -237,7 +233,7 @@ build_params(BaseUrl, [{ParamName, ParamValue} = Param |RestParams], AllParams, 
 		_ ->
 		    build_params(BaseUrl, RestParams, AllParams, MethodJson,  {QS, Headers, Postbody} )
 	    end;
-	{ParamInfo} ->
+	ParamInfo ->
 
 	    Location = proplists:get_value(<<"location">>, ParamInfo),
 

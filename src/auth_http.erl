@@ -88,7 +88,7 @@ start_link( )->
 -spec start_link(JsonFilePath::filename:file_any(), Scope::[string()] )-> {ok, pid()}.
 start_link(JsonFilePath, Scope)->
     {ok, Binary} = file:read_file(JsonFilePath),
-    {KeyData} = jiffy:decode(Binary),
+    KeyData = jsx:decode(Binary),
     
     gen_server:start_link( {local, ?MODULE}, ?MODULE, [
 						       {auth_mode, keyfile},
@@ -253,7 +253,7 @@ refresh_token(Config) ->
 -spec refresh_token_service([{term(), term()}]) -> [{term(), term()}].
 refresh_token_service(Config) ->
     TokenData = get_app_service_property(<<"token">>),
-    {RespJson} = jiffy:decode(TokenData),
+    RespJson = jsx:decode(TokenData),
     
     Config_1 = lists:keystore(access_token,   1, Config, {access_token, proplists:get_value(<<"access_token">>, RespJson)}),
 
@@ -281,9 +281,10 @@ refresh_token_file(Config) ->
     case StatusCode of
 	200 ->
 
-	    {RespJson} = jiffy:decode(RespBody),
+	    RespJson = jsx:decode(RespBody),
 
-	    Config_1 = lists:keystore(token_response, 1, Config,   {token_response, {RespJson}}),
+	    %Config_1 = lists:keystore(token_response, 1, Config,   {token_response, {RespJson}}),
+	    Config_1 = lists:keystore(token_response, 1, Config,   {token_response, RespJson}),
 	    Config_2 = lists:keystore(access_token,   1, Config_1, {access_token, proplists:get_value(<<"access_token">>, RespJson)}),
 	    Config_3 = lists:keystore(refresh_token,  1, Config_2, {refresh_token, proplists:get_value(<<"refresh_token">>, RespJson, undefined)}),
 
@@ -331,13 +332,13 @@ scopes_to_string([H|_Rest] = Scopes) when is_integer(H)->
 generate_assertion(Config)->
     %%5 Generate the assertion that will be used in the request.
     Now = now_sec(os:timestamp() ),
-    Payload = {[
+    Payload = [
 	       {<<"aud">>, proplists:get_value(token_uri, Config)},
 	       {<<"scope">>, safe_to_bin(proplists:get_value(scope, Config))},
 	       {<<"iat">>, Now},
 	       {<<"exp">>, Now + ?MAX_TOKEN_LIFETIME_SECS},
 	       {<<"iss">>, safe_to_bin(proplists:get_value(service_account_name, Config))}
-	      ]},
+	      ],
 
     Private_key = base64:decode(proplists:get_value(private_key, Config)),
     Key = key_from_string(Private_key, proplists:get_value(private_key_password, Config)), 
@@ -352,7 +353,7 @@ key_from_string(Private_key, _Private_key_password)->
 -spec make_signed_jwt(Key::any(), Payload::any())->binary().
 make_signed_jwt(Key, Payload)->
 
-    Header = {[{<<"typ">>,<<"JWT">>}, {<<"alg">>,<<"RS256">>}]},
+    Header = [{<<"typ">>,<<"JWT">>}, {<<"alg">>,<<"RS256">>}],
 
     Segments = [
 		'_urlsafe_b64encode'('_json_encode'(Header)),
@@ -410,8 +411,7 @@ now_sec({MegaSecs,Secs,_MicroSecs})->
 
 -spec '_json_encode'({[tuple()]}) -> binary().
 '_json_encode'(Object)->
-    
-    case (catch jiffy:encode(Object) ) of 
+    case (catch jsx:encode(Object) ) of 
 	{'EXIT', _Reason} = Err ->
 	    throw(Err);
 	Res ->
